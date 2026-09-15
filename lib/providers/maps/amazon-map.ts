@@ -19,6 +19,8 @@ type MapBlobOutput =
 const region = process.env.AMAZON_LOCATION_REGION ?? process.env.AWS_REGION ?? process.env.AWS_DEFAULT_REGION ?? "us-west-2";
 const mapName = process.env.AMAZON_LOCATION_MAP_NAME ?? "MyTripPlannerMap";
 const client = new LocationClient({ region });
+const MAP_ASSET_CACHE = "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400";
+const MAP_STYLE_CACHE = "public, max-age=300, s-maxage=86400, stale-while-revalidate=3600";
 
 async function blobResponse(output: MapBlobOutput): Promise<Response> {
   if (!output.Blob) return new Response("Map asset was empty.", { status: 502 });
@@ -27,7 +29,7 @@ async function blobResponse(output: MapBlobOutput): Promise<Response> {
   new Uint8Array(body).set(bytes);
   return new Response(body, {
     headers: {
-      "Cache-Control": output.CacheControl ?? "public, max-age=86400",
+      "Cache-Control": MAP_ASSET_CACHE,
       "Content-Type": output.ContentType ?? "application/octet-stream",
     },
   });
@@ -50,7 +52,7 @@ export async function getStyleDescriptor(origin: string) {
 
   return Response.json(style, {
     headers: {
-      "Cache-Control": "no-store",
+      "Cache-Control": MAP_STYLE_CACHE,
     },
   });
 }

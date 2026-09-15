@@ -10,6 +10,9 @@ interface MapPanelProps {
   ordered?: boolean;
 }
 
+const CATALOG_MARKER_LIMIT = 30;
+const ORDERED_MARKER_LIMIT = 80;
+
 export function MapPanel({
   places,
   title = "Location overview",
@@ -18,7 +21,10 @@ export function MapPanel({
 }: MapPanelProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [mapFailed, setMapFailed] = useState(false);
-  const visible = useMemo(() => places.slice(0, 60), [places]);
+  const visible = useMemo(
+    () => places.slice(0, ordered ? ORDERED_MARKER_LIMIT : CATALOG_MARKER_LIMIT),
+    [ordered, places],
+  );
   const lats = visible.map((place) => place.latitude);
   const lngs = visible.map((place) => place.longitude);
   const minLat = lats.length ? Math.min(...lats) : 0; const maxLat = lats.length ? Math.max(...lats) : 0;
@@ -48,10 +54,11 @@ export function MapPanel({
         try {
           map = new maplibre.Map({
             container: mapContainerRef.current,
-            style: "/api/maps/style?v=2",
+            style: "/api/maps/style?v=3",
             center: [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2],
             zoom: bounds.maxLng - bounds.minLng > 4 ? 5 : 11,
             attributionControl: { compact: true },
+            fadeDuration: 0,
           });
         } catch {
           setMapFailed(true);
@@ -126,9 +133,9 @@ export function MapPanel({
       <div className="map-header">
         <div>
           <h3>{title}</h3>
-          <p>{description}</p>
+          {description && <p>{description}</p>}
         </div>
-        <span>{visible.length} shown</span>
+        <span>{visible.length}{places.length > visible.length ? ` of ${places.length}` : ""} shown</span>
       </div>
       {!mapFailed && <div className="real-map" ref={mapContainerRef} />}
       {mapFailed && <p className="notice notice-muted">Amazon Location map tiles are unavailable, so this fallback coordinate view is shown.</p>}
