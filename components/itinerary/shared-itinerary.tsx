@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Itinerary } from "@/lib/planner/types";
+import { itinerarySchema } from "@/lib/planner/itinerary-schema";
 import { ItineraryEditor } from "./itinerary-editor";
 
 export function SharedItinerary({ token }: { token: string }) {
@@ -15,7 +16,7 @@ export function SharedItinerary({ token }: { token: string }) {
     }
     try {
       const value = decodeURIComponent(escape(atob(window.location.hash.slice(1))));
-      setItinerary(JSON.parse(value) as Itinerary);
+      setItinerary(itinerarySchema.parse(JSON.parse(value)));
     } catch {
       setError("This share link is invalid.");
     }

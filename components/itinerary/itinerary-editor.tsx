@@ -149,7 +149,7 @@ export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false
       />
       {status && <p className="status" role="status">{status}</p>}
       <MapPanel
-        description="Stops are plotted by latitude and longitude in itinerary order. Travel times use Amazon Location when configured."
+        description=""
         ordered
         places={itinerary.days.flatMap((day) => day.stops.map((stop) => stop.place))}
         title="Trip route overview"

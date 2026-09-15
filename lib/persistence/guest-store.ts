@@ -1,4 +1,5 @@
 import type { Itinerary } from "@/lib/planner/types";
+import { itinerarySchema } from "@/lib/planner/itinerary-schema";
 
 const STORAGE_KEY = "italy-itineraries:v1";
 
@@ -13,7 +14,7 @@ function readStore(): GuestStore {
   if (!raw) return { version: 1, itineraries: [] };
   const parsed = JSON.parse(raw) as GuestStore;
   if (parsed.version !== 1 || !Array.isArray(parsed.itineraries)) throw new Error("Saved itinerary data is incompatible.");
-  return parsed;
+  return { version: 1, itineraries: itinerarySchema.array().parse(parsed.itineraries) };
 }
 
 export function listGuestItineraries(): Itinerary[] {

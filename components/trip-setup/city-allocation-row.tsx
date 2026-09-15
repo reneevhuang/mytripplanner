@@ -1,18 +1,17 @@
+import { format, parseISO } from "date-fns";
 import type { CityAllocation } from "@/lib/planner/types";
 
 export function CityAllocationRow({
   allocation,
   cities,
-  tripStart,
-  tripEnd,
+  tripDates,
   canRemove,
   onChange,
   onRemove,
 }: {
   allocation: CityAllocation;
   cities: string[];
-  tripStart: string;
-  tripEnd: string;
+  tripDates: string[];
   canRemove: boolean;
   onChange: (allocation: CityAllocation) => void;
   onRemove: () => void;
@@ -25,26 +24,29 @@ export function CityAllocationRow({
           {cities.map((city) => <option key={city}>{city}</option>)}
         </select>
       </label>
-      <label className="field">
-        From
-        <input
-          type="date"
-          min={tripStart}
-          max={tripEnd}
-          value={allocation.startDate}
-          onChange={(event) => onChange({ ...allocation, startDate: event.target.value })}
-        />
-      </label>
-      <label className="field">
-        To
-        <input
-          type="date"
-          min={tripStart}
-          max={tripEnd}
-          value={allocation.endDate}
-          onChange={(event) => onChange({ ...allocation, endDate: event.target.value })}
-        />
-      </label>
+      <fieldset className="allocation-dates">
+        <legend>Dates</legend>
+        <div>
+          {tripDates.map((date) => {
+            const checked = allocation.dates.includes(date);
+            return (
+              <label className={checked ? "selected" : ""} key={date}>
+                <input
+                  checked={checked}
+                  type="checkbox"
+                  onChange={() => onChange({
+                    ...allocation,
+                    dates: checked
+                      ? allocation.dates.filter((selectedDate) => selectedDate !== date)
+                      : [...allocation.dates, date].sort(),
+                  })}
+                />
+                {format(parseISO(date), "EEE, MMM d")}
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
       {canRemove && <button className="text-button danger" type="button" onClick={onRemove}>Remove</button>}
     </div>
   );

@@ -1,4 +1,5 @@
 import type { ItineraryStop } from "@/lib/planner/types";
+import { formatDuration } from "@/lib/format-duration";
 
 export function ItineraryStopCard({
   stop,
@@ -55,7 +56,7 @@ export function ItineraryStopCard({
             onChange={(event) => onTimeChange(event.target.value)}
           />
         )}
-        <span>{stop.durationMinutes} min{stop.durationEstimated ? " est." : ""}</span>
+        <span>{formatDuration(stop.durationMinutes)}{stop.durationEstimated ? " est." : ""}</span>
       </div>
       <div className="stop-body">
         <div>

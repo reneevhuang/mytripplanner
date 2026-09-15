@@ -1,7 +1,9 @@
 import { addDays, eachDayOfInterval, formatISO, isAfter, parseISO } from "date-fns";
 import { minutesFromTime, roundUpToHalfHour, timeFromMinutes } from "@/lib/catalog/hours";
 import type { Place } from "@/lib/catalog/schema";
+import { formatDuration } from "@/lib/format-duration";
 import { findDayConflicts } from "./conflicts";
+import { datesInRange } from "./city-allocations";
 import { estimateTravelGap, haversineKm } from "./proximity";
 import { scorePlace } from "./scoring";
 import type { CityAllocation, Itinerary, ItineraryDay, ItineraryStop, TripInput } from "./types";
@@ -20,22 +22,18 @@ function validateInput(input: TripInput): void {
     throw new Error("Daily start time must be before the end time.");
   }
   for (const allocation of input.cityAllocations) {
-    if (
-      allocation.startDate > allocation.endDate ||
-      allocation.startDate < input.startDate ||
-      allocation.endDate > input.endDate
-    ) {
+    if (!allocation.dates.length || allocation.dates.some((date) => date < input.startDate || date > input.endDate)) {
       throw new Error(`The ${allocation.city} allocation falls outside the trip dates.`);
     }
   }
-  for (const date of eachDayOfInterval({ start, end }).map((value) => formatISO(value, { representation: "date" }))) {
-    const matches = input.cityAllocations.filter((allocation) => date >= allocation.startDate && date <= allocation.endDate);
-    if (matches.length !== 1) throw new Error(`Assign exactly one city to ${date}.`);
+  for (const date of datesInRange(input.startDate, input.endDate)) {
+    const matches = input.cityAllocations.filter((allocation) => allocation.dates.includes(date));
+    if (!matches.length) throw new Error(`Choose at least one city for ${date}.`);
   }
 }
 
-function allocationForDate(date: string, allocations: CityAllocation[]): CityAllocation | undefined {
-  return allocations.find((allocation) => date >= allocation.startDate && date <= allocation.endDate);
+function allocationsForDate(date: string, allocations: CityAllocation[]): CityAllocation[] {
+  return allocations.filter((allocation) => allocation.dates.includes(date));
 }
 
 function warningsFor(place: Place, startMinutes: number, durationMinutes: number): string[] {
@@ -43,10 +41,9 @@ function warningsFor(place: Place, startMinutes: number, durationMinutes: number
   if (place.booking_required === true) warnings.push("Advance booking recommended.");
   if (place.booking_required === null) warnings.push("Booking requirement is unknown.");
   if (place.seasonal_notes) warnings.push(place.seasonal_notes);
-  if (place.duration_minutes === null) warnings.push(`Duration estimated at ${DEFAULT_DURATION_MINUTES} minutes.`);
-  if (place.hoursStatus !== "parsed") {
-    warnings.push(place.hours ? "Opening hours are unverified." : "Opening hours are unavailable.");
-  } else if (
+  if (place.duration_minutes === null) warnings.push(`Time there estimated at ${formatDuration(DEFAULT_DURATION_MINUTES)}.`);
+  if (
+    place.hoursStatus === "parsed" &&
     place.parsedHours &&
     (startMinutes < place.parsedHours.openMinutes || startMinutes + durationMinutes > place.parsedHours.closeMinutes)
   ) {
@@ -67,11 +64,22 @@ function orderByProximity(candidates: Place[]): Place[] {
   return ordered;
 }
 
-function buildDay(date: string, city: string, places: Place[], input: TripInput, used: Set<string>): ItineraryDay {
-  const available = places
-    .filter((place) => place.city === city && !used.has(place.id))
-    .sort((a, b) => scorePlace(b, input) - scorePlace(a, input));
-  const selected = orderByProximity(available.slice(0, MAX_STOPS[input.pace]));
+function buildDay(date: string, cities: string[], places: Place[], input: TripInput, used: Set<string>): ItineraryDay {
+  const selected: Place[] = [];
+  let remainingSlots = MAX_STOPS[input.pace];
+
+  cities.forEach((city, cityIndex) => {
+    if (!remainingSlots) return;
+    const available = places
+      .filter((place) => place.city === city && !used.has(place.id))
+      .sort((a, b) => scorePlace(b, input) - scorePlace(a, input));
+    const remainingCities = cities.length - cityIndex;
+    const cityLimit = Math.max(1, Math.ceil(remainingSlots / remainingCities));
+    const cityPlaces = orderByProximity(available.slice(0, cityLimit));
+    selected.push(...cityPlaces);
+    remainingSlots -= cityPlaces.length;
+  });
+
   const stops: ItineraryStop[] = [];
   let cursor = minutesFromTime(input.dayStart);
   const end = minutesFromTime(input.dayEnd);
@@ -98,9 +106,12 @@ function buildDay(date: string, city: string, places: Place[], input: TripInput,
     cursor = startMinutes + durationMinutes;
   }
 
-  const day: ItineraryDay = { date, city, notes: "", stops, warnings: [] };
+  const day: ItineraryDay = { date, city: cities.join(" → "), notes: "", stops, warnings: [] };
   day.warnings = findDayConflicts(day, input.dayEnd);
   if (!stops.length) day.warnings.push("No eligible places fit this day.");
+  else cities
+    .filter((city) => !stops.some((stop) => stop.place.city === city))
+    .forEach((city) => day.warnings.push(`No eligible places fit for ${city}.`));
   return day;
 }
 
@@ -110,8 +121,9 @@ export function generateItinerary(input: TripInput, places: Place[], now = new D
   const used = new Set<string>();
   const days = dates.map((dateValue) => {
     const date = formatISO(dateValue, { representation: "date" });
-    const allocation = allocationForDate(date, input.cityAllocations)!;
-    return buildDay(date, allocation.city, places, input, used);
+    const allocations = allocationsForDate(date, input.cityAllocations);
+    const cities = [...new Set(allocations.map((allocation) => allocation.city))];
+    return buildDay(date, cities, places, input, used);
   });
   const timestamp = now.toISOString();
 

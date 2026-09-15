@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { Place, PriceRange } from "@/lib/catalog/schema";
 import { generateItinerary } from "@/lib/planner/generate";
 import type { CityAllocation, Itinerary, Pace, TravelParty, TripInput } from "@/lib/planner/types";
-import { listGuestItineraries } from "@/lib/persistence/guest-store";
+import { deleteGuestItinerary, listGuestItineraries } from "@/lib/persistence/guest-store";
 import { ItineraryEditor } from "@/components/itinerary/itinerary-editor";
 import { minutesFromTime, roundUpToHalfHour, timeFromMinutes } from "@/lib/catalog/hours";
 import { findDayConflicts } from "@/lib/planner/conflicts";
 import type { TravelGap } from "@/lib/planner/types";
+import { datesInRange, sortCityAllocations } from "@/lib/planner/city-allocations";
 import { PlannerProgress } from "./planner-progress";
 import { CityAllocationRow } from "./city-allocation-row";
 import { InterestSelector } from "./interest-selector";
@@ -52,7 +53,7 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
   const [startDate, setStartDate] = useState(initialDate);
   const [endDate, setEndDate] = useState(initialDate);
   const [allocations, setAllocations] = useState<CityAllocation[]>([
-    { city: cities[0], startDate: initialDate, endDate: initialDate },
+    { id: "city-allocation-1", city: cities[0], dates: [initialDate] },
   ]);
   const [dayStart, setDayStart] = useState("09:00");
   const [dayEnd, setDayEnd] = useState("19:00");
@@ -62,12 +63,15 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
   const [party, setParty] = useState<TravelParty>("couple");
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [saved, setSaved] = useState<Itinerary[]>([]);
+  const [showAllSaved, setShowAllSaved] = useState(false);
   const [cloudSaved, setCloudSaved] = useState<Itinerary[]>([]);
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
   const [step, setStep] = useState(1);
   const [stepError, setStepError] = useState("");
   const tags = useMemo(() => [...new Set(places.flatMap((place) => place.tags))].sort(), [places]);
+  const tripDates = useMemo(() => datesInRange(startDate, endDate), [endDate, startDate]);
+  const visibleSaved = showAllSaved ? saved : saved.slice(0, 3);
 
   useEffect(() => {
     try { setSaved(listGuestItineraries()); } catch (cause) { setError(cause instanceof Error ? cause.message : "Saved trips could not be read."); }
@@ -110,16 +114,70 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
     }
   };
 
+  const removeDeviceTrip = (id: string) => {
+    try {
+      deleteGuestItinerary(id);
+      const remaining = saved.filter((trip) => trip.id !== id);
+      setSaved(remaining);
+      if (remaining.length <= 3) setShowAllSaved(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "The saved trip could not be removed.");
+    }
+  };
+
   const syncDates = (field: "start" | "end", value: string) => {
+    const nextStart = field === "start" ? value : startDate;
+    const nextEnd = field === "end" ? value : endDate;
     if (field === "start") setStartDate(value); else setEndDate(value);
-    setAllocations((current) => current.map((allocation, index) => index === 0 ? { ...allocation, [field === "start" ? "startDate" : "endDate"]: value } : allocation));
+    const allowedDates = datesInRange(nextStart, nextEnd);
+    setAllocations((current) => {
+      const filtered = current.map((allocation) => ({
+        ...allocation,
+        dates: allocation.dates.filter((date) => allowedDates.includes(date)),
+      }));
+      const assignedDates = new Set(filtered.flatMap((allocation) => allocation.dates));
+      const unassignedDates = allowedDates.filter((date) => !assignedDates.has(date));
+      if (filtered[0]) filtered[0] = { ...filtered[0], dates: [...filtered[0].dates, ...unassignedDates].sort() };
+      return sortCityAllocations(filtered);
+    });
+  };
+
+  const updateAllocation = (id: string, value: CityAllocation) => {
+    setAllocations((current) => sortCityAllocations(
+      current.map((allocation) => allocation.id === id ? value : allocation),
+    ));
+  };
+
+  const removeAllocation = (id: string) => {
+    setAllocations((current) => {
+      const removedDates = current.find((allocation) => allocation.id === id)?.dates ?? [];
+      const remaining = current.filter((allocation) => allocation.id !== id);
+      if (remaining[0]) remaining[0] = { ...remaining[0], dates: [...remaining[0].dates, ...removedDates].sort() };
+      return sortCityAllocations(remaining);
+    });
+  };
+
+  const addAllocation = () => {
+    setAllocations((current) => {
+      const assignedDates = new Set(current.flatMap((allocation) => allocation.dates));
+      const firstUnassignedDate = tripDates.find((date) => !assignedDates.has(date));
+      return sortCityAllocations([
+        ...current,
+        {
+          id: `city-allocation-${Date.now()}`,
+          city: cities.find((city) => !current.some((allocation) => allocation.city === city)) ?? cities[0],
+          dates: firstUnassignedDate ? [firstUnassignedDate] : [],
+        },
+      ]);
+    });
   };
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError("");
     setGenerating(true);
-    const input: TripInput = { name, startDate, endDate, cityAllocations: allocations, dayStart, dayEnd, interests, budget, pace, party };
+    const cityAllocations = allocations.map(({ city, dates }) => ({ city, dates }));
+    const input: TripInput = { name, startDate, endDate, cityAllocations, dayStart, dayEnd, interests, budget, pace, party };
     try {
       const baseItinerary = generateItinerary(input, places);
       try {
@@ -140,6 +198,17 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
       setStepError("Complete the trip basics with valid dates and daily times.");
       return;
     }
+    if (step === 2) {
+      const unassignedDate = tripDates.find((date) =>
+        !allocations.some((allocation) => allocation.dates.includes(date))
+      );
+      if (allocations.some((allocation) => !allocation.dates.length) || unassignedDate) {
+        setStepError(unassignedDate
+          ? `Choose at least one city for ${unassignedDate}.`
+          : "Choose at least one date for every city or remove the empty city.");
+        return;
+      }
+    }
     setStep((current) => Math.min(3, current + 1));
   };
 
@@ -155,8 +224,38 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
       {saved.length > 0 && (
         <aside className="saved-trips">
           <h2>Saved on this device</h2>
-          <div className="saved-grid">{saved.map((trip) => <button type="button" key={trip.id} onClick={() => setItinerary(trip)}><strong>{trip.input.name}</strong><span>{trip.input.startDate} → {trip.input.endDate}</span></button>)}</div>
-          <button className="button button-secondary" type="button" onClick={importDeviceTrips}>Import device trips to account</button>
+          <div className="saved-grid">
+            {visibleSaved.map((trip) => (
+              <div className="saved-trip-item" key={trip.id}>
+                <button className="saved-trip-open" type="button" onClick={() => setItinerary(trip)}>
+                  <strong>{trip.input.name}</strong>
+                  <span>{trip.input.startDate} → {trip.input.endDate}</span>
+                </button>
+                <button
+                  aria-label={`Remove ${trip.input.name} from this device`}
+                  className="saved-trip-remove"
+                  title="Remove saved trip"
+                  type="button"
+                  onClick={() => removeDeviceTrip(trip.id)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="saved-trips-actions">
+            {saved.length > 3 && (
+              <button
+                aria-expanded={showAllSaved}
+                className="text-button"
+                type="button"
+                onClick={() => setShowAllSaved((current) => !current)}
+              >
+                {showAllSaved ? "Show less" : `Show more (${saved.length - 3})`}
+              </button>
+            )}
+            <button className="button button-secondary" type="button" onClick={importDeviceTrips}>Import device trips to account</button>
+          </div>
         </aside>
       )}
       {cloudSaved.length > 0 && (
@@ -184,22 +283,21 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
           {step === 2 && (
             <fieldset className="planner-step-card">
               <legend>Cities and dates</legend>
-              <p className="step-intro">Assign exactly one city to every date in your trip.</p>
+              <p className="step-intro">Choose one or more dates for each city. You can use the same date for nearby cities; the planner will finish one city before moving to the next and keep your trip in date order.</p>
               <div className="allocation-list">
-                {allocations.map((allocation, index) => (
+                {allocations.map((allocation) => (
                   <CityAllocationRow
                     allocation={allocation}
                     canRemove={allocations.length > 1}
                     cities={cities}
-                    key={`${allocation.city}-${index}`}
-                    onChange={(value) => setAllocations((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))}
-                    onRemove={() => setAllocations((current) => current.filter((_, itemIndex) => itemIndex !== index))}
-                    tripEnd={endDate}
-                    tripStart={startDate}
+                    key={allocation.id}
+                    onChange={(value) => updateAllocation(allocation.id!, value)}
+                    onRemove={() => removeAllocation(allocation.id!)}
+                    tripDates={tripDates}
                   />
                 ))}
               </div>
-              <button className="button button-secondary" type="button" onClick={() => setAllocations((current) => [...current, { city: cities[0], startDate, endDate }])}>Add another city</button>
+              <button className="button button-secondary" type="button" onClick={addAllocation}>Add another city</button>
             </fieldset>
           )}
           {step === 3 && (

@@ -66,14 +66,6 @@ export function CatalogExplorer({ places, facets }: { places: Place[]; facets: C
           <h2 id="catalog-heading">Find your anchors</h2>
           <p>Start broad, then narrow the collection when you know what matters most.</p>
         </div>
-        <button
-          className="button button-secondary"
-          type="button"
-          onClick={() => setShowMap((value) => !value)}
-          aria-pressed={showMap}
-        >
-          {showMap ? "Hide location overview" : "Show location overview"}
-        </button>
       </div>
       <CatalogFilters
         facets={facets}
@@ -86,7 +78,28 @@ export function CatalogExplorer({ places, facets }: { places: Place[]; facets: C
           Showing {Math.min(visibleCount, filtered.length)} of {filtered.length} places
         </p>
       </div>
+      <button
+        aria-pressed={showMap}
+        className="button button-secondary map-overview-toggle"
+        type="button"
+        onClick={() => setShowMap((value) => !value)}
+      >
+        {showMap ? "Hide location overview" : "Show location overview"}
+      </button>
       {showMap && <MapPanel places={filtered} />}
+      <div className="table-controls">
+        <label>
+          <span>Sort</span>
+          <select
+            value={filters.sort}
+            onChange={(event) => setFilters((current) => ({ ...current, sort: event.target.value }))}
+          >
+            <option value="rating">Highest rated</option>
+            <option value="name">Name</option>
+            <option value="duration">Shortest visit</option>
+          </select>
+        </label>
+      </div>
       <CatalogResults
         places={filtered.slice(0, visibleCount)}
         hasMore={visibleCount < filtered.length}

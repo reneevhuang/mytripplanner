@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { rawPlaceSchema } from "@/lib/catalog/schema";
+import { datesInRange } from "./city-allocations";
 
 const placeSchema = rawPlaceSchema.extend({
   tags: z.array(z.string()),
@@ -23,11 +24,20 @@ const tripInputSchema = z.object({
   name: z.string().min(1),
   startDate: z.string().min(1),
   endDate: z.string().min(1),
-  cityAllocations: z.array(z.object({
-    city: z.string().min(1),
-    startDate: z.string().min(1),
-    endDate: z.string().min(1),
-  })).min(1),
+  cityAllocations: z.array(z.union([
+    z.object({
+      city: z.string().min(1),
+      dates: z.array(z.string().min(1)).min(1),
+    }),
+    z.object({
+      city: z.string().min(1),
+      startDate: z.string().min(1),
+      endDate: z.string().min(1),
+    }).transform((allocation) => ({
+      city: allocation.city,
+      dates: datesInRange(allocation.startDate, allocation.endDate),
+    })),
+  ]).refine((allocation) => allocation.dates.length > 0, "Each city needs at least one date.")).min(1),
   dayStart: z.string().min(1),
   dayEnd: z.string().min(1),
   interests: z.array(z.string()),
@@ -66,4 +76,3 @@ export const itinerarySchema = z.object({
   updatedAt: z.string().min(1),
   warnings: z.array(z.string()),
 });
-

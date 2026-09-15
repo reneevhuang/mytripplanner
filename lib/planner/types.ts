@@ -5,9 +5,9 @@ export type TravelParty = "solo" | "couple" | "family" | "friends";
 export type TravelMode = "walking" | "transit" | "driving";
 
 export interface CityAllocation {
+  id?: string;
   city: string;
-  startDate: string;
-  endDate: string;
+  dates: string[];
 }
 
 export interface TripInput {

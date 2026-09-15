@@ -9,7 +9,7 @@ describe("calendar export", () => {
       name: "Day in Rome",
       startDate: "2026-10-01",
       endDate: "2026-10-01",
-      cityAllocations: [{ city: "Rome", startDate: "2026-10-01", endDate: "2026-10-01" }],
+      cityAllocations: [{ city: "Rome", dates: ["2026-10-01"] }],
       dayStart: "09:00",
       dayEnd: "18:00",
       interests: ["historic"],

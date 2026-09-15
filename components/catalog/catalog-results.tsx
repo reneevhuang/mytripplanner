@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { Place } from "@/lib/catalog/schema";
+import { formatDuration } from "@/lib/format-duration";
 
 export function CatalogResults({
   places,
@@ -60,7 +61,7 @@ function FragmentRow({ place, expanded, onToggle }: { place: Place; expanded: bo
         <td data-label="Type">{place.type.replaceAll("_", " ")}</td>
         <td data-label="Rating"><strong>{place.rating.toFixed(1)}★</strong></td>
         <td data-label="Price">{place.price_range}</td>
-        <td data-label="Duration">{place.duration_minutes ? `${place.duration_minutes} min` : "Unknown"}</td>
+        <td data-label="Duration">{formatDuration(place.duration_minutes)}</td>
         <td data-label="Booking">{place.booking_required === null ? "Unknown" : place.booking_required ? "Yes" : "No"}</td>
       </tr>
       {expanded && (

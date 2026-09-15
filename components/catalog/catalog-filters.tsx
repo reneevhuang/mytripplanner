@@ -93,21 +93,6 @@ export function CatalogFilters({
       <details className="more-filters">
         <summary>More filters</summary>
         <div className="secondary-filters">
-          <fieldset className="tag-filter">
-            <legend>Tags <span>match any selected</span></legend>
-            <div className="tag-filter-grid">
-              {facets.tags.map((tag) => {
-                const checked = filters.tags.includes(tag);
-                return (
-                  <label className={checked ? "selected" : ""} key={tag}>
-                    <input checked={checked} onChange={() => toggleTag(tag)} type="checkbox" />
-                    <span aria-hidden="true">{checked ? "✓" : "+"}</span>
-                    {tag.replaceAll("-", " ")}
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
           <label className="rating-filter">
             <span>
               Minimum rating
@@ -155,14 +140,21 @@ export function CatalogFilters({
               <option value="unknown">Unknown</option>
             </select>
           </label>
-          <label className="field">
-            Sort
-            <select value={filters.sort} onChange={(event) => update("sort", event.target.value)}>
-              <option value="rating">Highest rated</option>
-              <option value="name">Name</option>
-              <option value="duration">Shortest visit</option>
-            </select>
-          </label>
+          <fieldset className="tag-filter">
+            <legend>Tags <span>match any selected</span></legend>
+            <div className="tag-filter-grid">
+              {facets.tags.map((tag) => {
+                const checked = filters.tags.includes(tag);
+                return (
+                  <label className={checked ? "selected" : ""} key={tag}>
+                    <input checked={checked} onChange={() => toggleTag(tag)} type="checkbox" />
+                    <span aria-hidden="true">{checked ? "✓" : "+"}</span>
+                    {tag.replaceAll("-", " ")}
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
         </div>
       </details>
       {chips.length > 0 && (

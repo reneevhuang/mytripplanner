@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPlaces, loadPlace } from "@/lib/catalog/repository";
+import { formatDuration } from "@/lib/format-duration";
 
 export function generateStaticParams() {
   return getPlaces().map((place) => ({ id: place.id }));
@@ -15,6 +16,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const place = await loadPlace((await params).id);
   if (!place) notFound();
+  const planningNotes = place.importWarnings.filter(
+    (warning) => !warning.startsWith("Opening hours "),
+  );
 
   return (
     <article className="detail-shell">
@@ -30,7 +34,7 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
       <p className="detail-description">{place.description}</p>
       <dl className="detail-grid">
         <div><dt>Hours</dt><dd>{place.hours ?? "Unknown"}</dd></div>
-        <div><dt>Typical visit</dt><dd>{place.duration_minutes ? `${place.duration_minutes} min` : "Unknown"}</dd></div>
+        <div><dt>Typical visit</dt><dd>{formatDuration(place.duration_minutes)}</dd></div>
         <div><dt>Price</dt><dd>{place.price_range}</dd></div>
         <div><dt>Booking</dt><dd>{place.booking_required === null ? "Unknown" : place.booking_required ? "Recommended" : "Not required"}</dd></div>
       </dl>
@@ -38,10 +42,10 @@ export default async function PlacePage({ params }: { params: Promise<{ id: stri
         {place.tagLabels.map((tag) => <span className="tag" key={tag}>{tag}</span>)}
       </div>
       {place.seasonal_notes && <aside className="notice"><strong>Seasonal note</strong><p>{place.seasonal_notes}</p></aside>}
-      {place.importWarnings.length > 0 && (
+      {planningNotes.length > 0 && (
         <aside className="notice notice-muted">
           <strong>Planning notes</strong>
-          <ul>{place.importWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+          <ul>{planningNotes.map((warning) => <li key={warning}>{warning}</li>)}</ul>
         </aside>
       )}
       <div className="detail-actions">

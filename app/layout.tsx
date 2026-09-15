@@ -26,9 +26,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <AccountMenu />
         </header>
         <main id="main-content">{children}</main>
-        <footer className="site-footer">
-          <p>Thoughtful routes, transparent estimates, and plans that remain yours.</p>
-        </footer>
       </body>
     </html>
   );
