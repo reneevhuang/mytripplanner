@@ -44,13 +44,19 @@ export function MapPanel({
     import("maplibre-gl")
       .then((maplibre) => {
         if (cancelled || !mapContainerRef.current) return;
-        const map = new maplibre.Map({
-          container: mapContainerRef.current,
-          style: "/api/maps/style",
-          center: [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2],
-          zoom: bounds.maxLng - bounds.minLng > 4 ? 5 : 11,
-          attributionControl: { compact: true },
-        });
+        let map: InstanceType<typeof maplibre.Map>;
+        try {
+          map = new maplibre.Map({
+            container: mapContainerRef.current,
+            style: "/api/maps/style",
+            center: [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2],
+            zoom: bounds.maxLng - bounds.minLng > 4 ? 5 : 11,
+            attributionControl: { compact: true },
+          });
+        } catch {
+          setMapFailed(true);
+          return;
+        }
         map.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
 
         const markers = visible.map((place, index) => {
@@ -100,7 +106,6 @@ export function MapPanel({
             });
           }
         });
-        map.once("error", () => setMapFailed(true));
         cleanup = () => {
           markers.forEach((marker) => marker.remove());
           map.remove();
