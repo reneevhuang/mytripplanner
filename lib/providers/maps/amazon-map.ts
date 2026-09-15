@@ -50,7 +50,7 @@ export async function getStyleDescriptor(origin: string) {
 
   return Response.json(style, {
     headers: {
-      "Cache-Control": output.CacheControl ?? "public, max-age=86400",
+      "Cache-Control": "no-store",
     },
   });
 }

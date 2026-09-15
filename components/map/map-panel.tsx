@@ -48,7 +48,7 @@ export function MapPanel({
         try {
           map = new maplibre.Map({
             container: mapContainerRef.current,
-            style: "/api/maps/style",
+            style: "/api/maps/style?v=2",
             center: [(bounds.minLng + bounds.maxLng) / 2, (bounds.minLat + bounds.maxLat) / 2],
             zoom: bounds.maxLng - bounds.minLng > 4 ? 5 : 11,
             attributionControl: { compact: true },
