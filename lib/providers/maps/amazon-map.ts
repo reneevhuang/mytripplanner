@@ -33,7 +33,7 @@ async function blobResponse(output: MapBlobOutput): Promise<Response> {
   });
 }
 
-export async function getStyleDescriptor() {
+export async function getStyleDescriptor(origin: string) {
   const output = await client.send(new GetMapStyleDescriptorCommand({ MapName: mapName }));
   if (!output.Blob) return new Response("Map style was empty.", { status: 502 });
   const style = JSON.parse(await output.Blob.transformToString()) as {
@@ -43,10 +43,10 @@ export async function getStyleDescriptor() {
   };
 
   for (const source of Object.values(style.sources ?? {})) {
-    if (source.tiles) source.tiles = ["/api/maps/tiles/{z}/{x}/{y}"];
+    if (source.tiles) source.tiles = [`${origin}/api/maps/tiles/{z}/{x}/{y}`];
   }
-  style.sprite = "/api/maps/sprites/sprites";
-  style.glyphs = "/api/maps/glyphs/{fontstack}/{range}.pbf";
+  style.sprite = `${origin}/api/maps/sprites/sprites`;
+  style.glyphs = `${origin}/api/maps/glyphs/{fontstack}/{range}.pbf`;
 
   return Response.json(style, {
     headers: {
