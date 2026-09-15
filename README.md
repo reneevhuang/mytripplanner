@@ -57,9 +57,10 @@ Set the region in `.env.local`:
 
 ```text
 AMAZON_LOCATION_REGION=us-west-2
+AMAZON_LOCATION_MAP_NAME=MyTripPlannerMap
 ```
 
-Alternatively, create an Amazon Location API key and set `AWS_LOCATION_API_KEY` for local development. Do not expose the key through a `NEXT_PUBLIC_` variable. Restart `npm run dev` after changing credentials. New itineraries will use Amazon Location walking routes; if AWS credentials, permissions, or routing are unavailable, the planner preserves the valid itinerary and explicitly labels straight-line estimates.
+The interactive map uses server-side proxy routes for Amazon Location map style, tile, sprite, and glyph assets. In production, the Amplify SSR Compute role needs `geo:GetMapStyleDescriptor`, `geo:GetMapTile`, `geo:GetMapSprites`, and `geo:GetMapGlyphs` for the map resource. New itineraries use Amazon Location walking routes; if AWS credentials, permissions, or routing are unavailable, the planner preserves the valid itinerary and explicitly labels straight-line estimates.
 
 ## Validation
 
@@ -111,7 +112,13 @@ AWS Amplify Hosting supports the Next.js App Router, server rendering, and route
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": "geo-routes:CalculateRoutes",
+      "Action": [
+        "geo-routes:CalculateRoutes",
+        "geo:GetMapStyleDescriptor",
+        "geo:GetMapTile",
+        "geo:GetMapSprites",
+        "geo:GetMapGlyphs"
+      ],
       "Resource": "*"
     }
   ]
@@ -136,7 +143,7 @@ AWS Amplify Hosting supports the Next.js App Router, server rendering, and route
 ```
 
 6. In Amplify, open **App settings → IAM roles → Compute role** and assign the role.
-7. Add `AMAZON_LOCATION_REGION`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as Amplify environment variables. Use a region where Amazon Location Routes is available. Do not use an `AWS_` prefix for custom Amplify environment variables because that prefix is reserved.
+7. Add `AMAZON_LOCATION_REGION`, `AMAZON_LOCATION_MAP_NAME`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as Amplify environment variables. Use a region where Amazon Location Routes and Maps are available. Do not use an `AWS_` prefix for custom Amplify environment variables because that prefix is reserved.
 8. Deploy, then verify `/api/health` and generate a trip to confirm gaps are labeled **Amazon Location route**.
 
 The Amplify SSR Compute role supplies temporary credentials at runtime. Do not store long-lived AWS access keys in Amplify environment variables.
