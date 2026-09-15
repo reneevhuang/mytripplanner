@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { CatalogExplorer } from "@/components/catalog/catalog-explorer";
-import { getCatalogFacets, getPlaces } from "@/lib/catalog/repository";
+import { getCatalogFacetsForPlaces, loadPlaces } from "@/lib/catalog/repository";
 
-export default function HomePage() {
-  const places = getPlaces();
-  const facets = getCatalogFacets();
+export default async function HomePage() {
+  const places = await loadPlaces();
+  const facets = getCatalogFacetsForPlaces(places);
 
   return (
     <>

@@ -7,6 +7,7 @@ import { findDayConflicts } from "@/lib/planner/conflicts";
 import { estimateTravelGap } from "@/lib/planner/proximity";
 import type { Itinerary, ItineraryDay, ItineraryStop } from "@/lib/planner/types";
 import { saveGuestItinerary } from "@/lib/persistence/guest-store";
+import { MapPanel } from "@/components/map/map-panel";
 import { EditorActionBar } from "./editor-action-bar";
 import { ItineraryDayCard } from "./itinerary-day-card";
 
@@ -36,6 +37,7 @@ export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false
 
   useEffect(() => {
     if (readOnly) return;
+    let cancelled = false;
     const timer = window.setTimeout(() => {
       try {
         saveGuestItinerary(itinerary);
@@ -43,9 +45,30 @@ export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false
       } catch {
         setStatus("Autosave failed. Check browser storage permissions.");
       }
+      fetch("/api/itineraries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(itinerary),
+      })
+        .then(async (response) => {
+          if (response.status === 401 || response.status === 503) return null;
+          if (!response.ok) throw new Error("Cloud save failed.");
+          return response.json() as Promise<{ itinerary: Itinerary }>;
+        })
+        .then((result) => {
+          if (!result || cancelled) return;
+          setStatus("All changes saved to your account.");
+          if (result.itinerary.id !== itinerary.id) onChange?.(result.itinerary);
+        })
+        .catch(() => {
+          if (!cancelled) setStatus("Saved on this device. Cloud save failed.");
+        });
     }, 500);
-    return () => window.clearTimeout(timer);
-  }, [itinerary, readOnly]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [itinerary, onChange, readOnly]);
 
   const updateDays = (days: ItineraryDay[]) => onChange?.({ ...itinerary, days, updatedAt: new Date().toISOString() });
   const updateStop = (dayIndex: number, stopIndex: number, update: Partial<ItineraryStop>) => updateDays(itinerary.days.map((day, index) => index === dayIndex ? { ...day, stops: day.stops.map((stop, itemIndex) => itemIndex === stopIndex ? { ...stop, ...update } : stop) } : day));
@@ -87,6 +110,24 @@ export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false
     try { saveGuestItinerary(copy); setStatus(`Saved “${copy.input.name}” as a separate trip.`); } catch { setStatus("Saving the copy failed. Check browser storage permissions."); }
   };
   const share = async () => {
+    try {
+      const response = await fetch("/api/shares", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(itinerary),
+      });
+      if (response.status !== 401 && response.status !== 503) {
+        if (!response.ok) throw new Error("Server share failed.");
+        const result = await response.json() as { url: string; itinerary: Itinerary };
+        const url = new URL(result.url, window.location.origin).toString();
+        await navigator.clipboard.writeText(url);
+        setStatus("Server-backed read-only link copied.");
+        if (result.itinerary.id !== itinerary.id) onChange?.(result.itinerary);
+        return;
+      }
+    } catch {
+      setStatus("Server share failed. Creating a local read-only link instead.");
+    }
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(itinerary))));
     const url = `${window.location.origin}/share/local#${encoded}`;
     try { await navigator.clipboard.writeText(url); setStatus("Read-only link copied."); } catch { setStatus(`Copy this link: ${url}`); }
@@ -107,6 +148,12 @@ export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false
         readOnly={readOnly}
       />
       {status && <p className="status" role="status">{status}</p>}
+      <MapPanel
+        description="Stops are plotted by latitude and longitude in itinerary order. Travel times use Amazon Location when configured."
+        ordered
+        places={itinerary.days.flatMap((day) => day.stops.map((stop) => stop.place))}
+        title="Trip route overview"
+      />
       <div className="day-list">
         {itinerary.days.map((day, dayIndex) => (
           <ItineraryDayCard

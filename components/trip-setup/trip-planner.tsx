@@ -62,6 +62,7 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
   const [party, setParty] = useState<TravelParty>("couple");
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [saved, setSaved] = useState<Itinerary[]>([]);
+  const [cloudSaved, setCloudSaved] = useState<Itinerary[]>([]);
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
   const [step, setStep] = useState(1);
@@ -70,7 +71,44 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
 
   useEffect(() => {
     try { setSaved(listGuestItineraries()); } catch (cause) { setError(cause instanceof Error ? cause.message : "Saved trips could not be read."); }
+    fetch("/api/itineraries")
+      .then(async (response) => {
+        if (response.status === 401 || response.status === 503) return null;
+        if (!response.ok) throw new Error("Account trips could not be read.");
+        return response.json() as Promise<{ itineraries: Itinerary[] }>;
+      })
+      .then((result) => setCloudSaved(result?.itineraries ?? []))
+      .catch((cause) => setError(cause instanceof Error ? cause.message : "Account trips could not be read."));
   }, []);
+
+  const refreshSavedTrips = async () => {
+    setSaved(listGuestItineraries());
+    const response = await fetch("/api/itineraries");
+    if (response.status === 401 || response.status === 503) return;
+    if (!response.ok) throw new Error("Account trips could not be read.");
+    const result = await response.json() as { itineraries: Itinerary[] };
+    setCloudSaved(result.itineraries);
+  };
+
+  const importDeviceTrips = async () => {
+    setError("");
+    try {
+      const localTrips = listGuestItineraries();
+      if (!localTrips.length) return;
+      const responses = await Promise.all(localTrips.map((trip) =>
+        fetch("/api/itineraries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(trip),
+        }),
+      ));
+      const failed = responses.find((response) => !response.ok);
+      if (failed) throw new Error(failed.status === 401 ? "Sign in before importing device trips." : "Import failed.");
+      await refreshSavedTrips();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Device trips could not be imported.");
+    }
+  };
 
   const syncDates = (field: "start" | "end", value: string) => {
     if (field === "start") setStartDate(value); else setEndDate(value);
@@ -106,7 +144,7 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
   };
 
   if (itinerary) {
-    return <ItineraryEditor itinerary={itinerary} onChange={setItinerary} onClose={() => { setItinerary(null); setSaved(listGuestItineraries()); }} />;
+    return <ItineraryEditor itinerary={itinerary} onChange={setItinerary} onClose={() => { setItinerary(null); void refreshSavedTrips(); }} />;
   }
 
   return (
@@ -118,6 +156,13 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
         <aside className="saved-trips">
           <h2>Saved on this device</h2>
           <div className="saved-grid">{saved.map((trip) => <button type="button" key={trip.id} onClick={() => setItinerary(trip)}><strong>{trip.input.name}</strong><span>{trip.input.startDate} → {trip.input.endDate}</span></button>)}</div>
+          <button className="button button-secondary" type="button" onClick={importDeviceTrips}>Import device trips to account</button>
+        </aside>
+      )}
+      {cloudSaved.length > 0 && (
+        <aside className="saved-trips saved-trips-cloud">
+          <h2>Saved to your account</h2>
+          <div className="saved-grid">{cloudSaved.map((trip) => <button type="button" key={trip.id} onClick={() => setItinerary(trip)}><strong>{trip.input.name}</strong><span>{trip.input.startDate} → {trip.input.endDate}</span></button>)}</div>
         </aside>
       )}
       <PlannerProgress currentStep={step} />

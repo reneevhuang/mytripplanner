@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { AccountMenu } from "@/components/auth/account-menu";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/">Places</Link>
             <Link href="/plan">Plan a trip</Link>
           </nav>
+          <AccountMenu />
         </header>
         <main id="main-content">{children}</main>
         <footer className="site-footer">

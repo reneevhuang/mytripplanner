@@ -26,6 +26,25 @@ npm run dev
 
 Open `http://localhost:3000`. The app works without external credentials and uses `italy.json` plus browser local storage.
 
+### Enable account sync and server-backed shares
+
+Create a Supabase project, then configure both public browser credentials and the private service role key:
+
+```text
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+Apply all migrations under `supabase\migrations`, including `202609150001_itinerary_payload.sql`. In Supabase Auth, add the local and production callback URLs:
+
+```text
+http://localhost:3000/auth/callback
+https://your-amplify-domain/auth/callback
+```
+
+When these values are present, the catalog loads from Supabase, users can sign in with magic links, authenticated trips autosave to the account, local guest trips can be imported, and share links use server-side token records. Without Supabase configuration, the app stays usable in guest mode with local device saves and local read-only share links.
+
 ### Enable real travel times
 
 The routing adapter uses Amazon Location Service Routes. For local development, configure AWS CLI credentials with permission to call `geo-routes:CalculateRoutes`:
@@ -54,8 +73,8 @@ npm run build
 ## Catalog import
 
 1. Create a Supabase project.
-2. Apply `supabase\migrations\202609140001_initial_schema.sql`.
-3. Set `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in the current shell.
+2. Apply all SQL files in `supabase\migrations`.
+3. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in the current shell.
 4. Run:
 
 ```powershell
@@ -117,7 +136,7 @@ AWS Amplify Hosting supports the Next.js App Router, server rendering, and route
 ```
 
 6. In Amplify, open **App settings → IAM roles → Compute role** and assign the role.
-7. Add `AMAZON_LOCATION_REGION` as an Amplify environment variable, using a region where Amazon Location Routes is available. Do not use an `AWS_` prefix for custom Amplify environment variables because that prefix is reserved.
+7. Add `AMAZON_LOCATION_REGION`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` as Amplify environment variables. Use a region where Amazon Location Routes is available. Do not use an `AWS_` prefix for custom Amplify environment variables because that prefix is reserved.
 8. Deploy, then verify `/api/health` and generate a trip to confirm gaps are labeled **Amazon Location route**.
 
 The Amplify SSR Compute role supplies temporary credentials at runtime. Do not store long-lived AWS access keys in Amplify environment variables.

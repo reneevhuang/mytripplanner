@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPlace, getPlaces } from "@/lib/catalog/repository";
+import { getPlaces, loadPlace } from "@/lib/catalog/repository";
 
 export function generateStaticParams() {
   return getPlaces().map((place) => ({ id: place.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const place = getPlace((await params).id);
+  const place = await loadPlace((await params).id);
   return { title: place?.name ?? "Place not found", description: place?.description };
 }
 
 export default async function PlacePage({ params }: { params: Promise<{ id: string }> }) {
-  const place = getPlace((await params).id);
+  const place = await loadPlace((await params).id);
   if (!place) notFound();
 
   return (
