@@ -172,8 +172,7 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
     });
   };
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const submit = async () => {
     setError("");
     setGenerating(true);
     const cityAllocations = allocations.map(({ city, dates }) => ({ city, dates }));
@@ -266,7 +265,13 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
       )}
       <PlannerProgress currentStep={step} />
       <div className="planner-workspace">
-        <form className="trip-form" onSubmit={submit}>
+        <form
+          className="trip-form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (step === 3) void submit();
+          }}
+        >
           {step === 1 && (
             <fieldset className="planner-step-card">
               <legend>Trip basics</legend>
@@ -318,7 +323,7 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
             {step < 3 ? (
               <button className="button button-primary" type="button" onClick={nextStep}>Continue</button>
             ) : (
-              <button className="button button-primary button-large" disabled={generating} type="submit">
+              <button className="button button-primary button-large" disabled={generating} type="button" onClick={() => void submit()}>
                 {generating ? "Building your itinerary…" : "Generate itinerary"}
               </button>
             )}
