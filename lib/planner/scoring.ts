@@ -11,6 +11,7 @@ export const PLANNER_WEIGHTS = {
   unknownPenalty: 1,
 } as const;
 
+// Scores one place against the trip preferences so higher-scoring places are scheduled first.
 export function scorePlace(place: Place, input: TripInput): number {
   const interestMatches = place.tags.filter((tag) => input.interests.includes(tag)).length;
   const budgetScore =

@@ -21,16 +21,19 @@ interface RouteSummary {
   Duration: number;
 }
 
+// Checks whether an unknown value can be safely read like an object.
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+// Checks whether an Amazon route summary has distance and duration fields.
 function isRouteSummary(summary: unknown): summary is RouteSummary {
   if (!isRecord(summary)) return false;
   const candidate = summary;
   return typeof candidate.Distance === "number" && typeof candidate.Duration === "number";
 }
 
+// Reads a summary from one route leg across Amazon's possible response shapes.
 function extractLegSummary(leg: unknown): RouteSummary | undefined {
   if (!isRecord(leg)) return undefined;
   const directSummary = leg.Summary;
@@ -46,6 +49,7 @@ function extractLegSummary(leg: unknown): RouteSummary | undefined {
   return undefined;
 }
 
+// Extracts total distance and duration from the first Amazon route result.
 function extractSummary(result: CalculateRoutesCommandOutput): RouteSummary | undefined {
   const route = result.Routes?.[0];
   if (!route) return undefined;
@@ -62,6 +66,7 @@ function extractSummary(result: CalculateRoutesCommandOutput): RouteSummary | un
   };
 }
 
+// Calls Amazon Location Routes and converts the result into the planner's TravelGap shape.
 export class AmazonLocationProvider implements MapProvider {
   private readonly region: string;
   private readonly apiKey?: string;

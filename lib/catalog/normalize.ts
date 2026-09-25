@@ -8,15 +8,18 @@ const TAG_ALIASES: Record<string, string> = {
   tourist_heavy: "tourist-heavy",
 };
 
+// Converts raw tag text into a stable lowercase slug.
 export function normalizeTag(tag: string): string {
   const slug = tag.trim().toLowerCase().replace(/\s+/g, "-");
   return TAG_ALIASES[slug] ?? slug.replaceAll("_", "-");
 }
 
+// Converts tag slugs into user-friendly labels.
 function displayTag(tag: string): string {
   return tag.replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+// Flags places with coordinates that are clearly outside Italy.
 function coordinateWarning(place: RawPlace): string | null {
   const italyBounds = { minLat: 35.4, maxLat: 47.2, minLng: 6.4, maxLng: 18.7 };
   if (
@@ -30,6 +33,7 @@ function coordinateWarning(place: RawPlace): string | null {
   return null;
 }
 
+// Validates and enriches one raw catalog place for app use.
 export function normalizePlace(place: RawPlace): Place {
   const tags = [...new Set(place.tags.map(normalizeTag))].sort();
   const parsedHours = parseSimpleHours(place.hours);
@@ -50,6 +54,7 @@ export function normalizePlace(place: RawPlace): Place {
   };
 }
 
+// Validates the full catalog, rejects duplicate IDs, and normalizes every place.
 export function normalizeCatalog(input: unknown): Place[] {
   const parsed = rawCatalogSchema.parse(input);
   const ids = new Set<string>();

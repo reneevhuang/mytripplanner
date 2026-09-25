@@ -1,4 +1,5 @@
 import { addDays, eachDayOfInterval, formatISO, isAfter, parseISO } from "date-fns";
+
 import { minutesFromTime, roundUpToHalfHour, timeFromMinutes } from "@/lib/catalog/hours";
 import type { Place } from "@/lib/catalog/schema";
 import { formatDuration } from "@/lib/format-duration";
@@ -11,6 +12,7 @@ import type { CityAllocation, Itinerary, ItineraryDay, ItineraryStop, TripInput 
 export const DEFAULT_DURATION_MINUTES = 75;
 const MAX_STOPS = { relaxed: 3, balanced: 5, full: 7 } as const;
 
+// Ensures dates, daily hours, and city allocations are internally consistent.
 function validateInput(input: TripInput): void {
   const start = parseISO(input.startDate);
   const end = parseISO(input.endDate);
@@ -32,10 +34,12 @@ function validateInput(input: TripInput): void {
   }
 }
 
+// Finds all city allocations that apply to one date.
 function allocationsForDate(date: string, allocations: CityAllocation[]): CityAllocation[] {
   return allocations.filter((allocation) => allocation.dates.includes(date));
 }
 
+// Builds user-facing warnings for uncertain or risky scheduling details.
 function warningsFor(place: Place, startMinutes: number, durationMinutes: number): string[] {
   const warnings: string[] = [];
   if (place.booking_required === true) warnings.push("Advance booking recommended.");
@@ -52,6 +56,7 @@ function warningsFor(place: Place, startMinutes: number, durationMinutes: number
   return warnings;
 }
 
+// Orders chosen stops by repeatedly picking the nearest next place.
 function orderByProximity(candidates: Place[]): Place[] {
   if (candidates.length < 2) return candidates;
   const remaining = [...candidates];
@@ -64,6 +69,7 @@ function orderByProximity(candidates: Place[]): Place[] {
   return ordered;
 }
 
+// Selects, orders, times, and validates all stops for a single date.
 function buildDay(date: string, cities: string[], places: Place[], input: TripInput, used: Set<string>): ItineraryDay {
   const selected: Place[] = [];
   let remainingSlots = MAX_STOPS[input.pace];
@@ -115,6 +121,7 @@ function buildDay(date: string, cities: string[], places: Place[], input: TripIn
   return day;
 }
 
+// Generates the full deterministic day-by-day itinerary from trip inputs and catalog places.
 export function generateItinerary(input: TripInput, places: Place[], now = new Date()): Itinerary {
   validateInput(input);
   const dates = eachDayOfInterval({ start: parseISO(input.startDate), end: parseISO(input.endDate) });
@@ -140,6 +147,7 @@ export function generateItinerary(input: TripInput, places: Place[], now = new D
   };
 }
 
+// Returns the ISO date string for the day after the given date.
 export function nextDate(date: string): string {
   return formatISO(addDays(parseISO(date), 1), { representation: "date" });
 }

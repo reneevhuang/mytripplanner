@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { getSupabaseBrowserConfig, getSupabaseServiceConfig } from "./config";
 
+// Creates a cookie-aware Supabase client for authenticated server routes/components.
 export async function createSupabaseServerClient() {
   const config = getSupabaseBrowserConfig();
   if (!config) return null;
@@ -22,6 +23,7 @@ export async function createSupabaseServerClient() {
   });
 }
 
+// Creates a service-role Supabase client for server-only privileged reads.
 export function createSupabaseServiceClient() {
   const config = getSupabaseServiceConfig();
   if (!config) return null;
@@ -29,4 +31,3 @@ export function createSupabaseServiceClient() {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
-

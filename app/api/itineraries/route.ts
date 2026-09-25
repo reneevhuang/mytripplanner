@@ -3,6 +3,7 @@ import { itinerarySchema } from "@/lib/planner/itinerary-schema";
 import { listCloudItineraries, saveCloudItinerary } from "@/lib/persistence/cloud-itineraries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+// Creates an authenticated Supabase client or returns the matching API error response.
 async function getAuthenticatedClient() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return { error: NextResponse.json({ error: "Supabase is not configured." }, { status: 503 }) };
@@ -11,6 +12,7 @@ async function getAuthenticatedClient() {
   return { supabase, user };
 }
 
+// Lists the signed-in user's saved cloud itineraries.
 export async function GET() {
   const auth = await getAuthenticatedClient();
   if ("error" in auth) return auth.error;
@@ -18,6 +20,7 @@ export async function GET() {
   return NextResponse.json({ itineraries });
 }
 
+// Validates and saves one itinerary for the signed-in user.
 export async function POST(request: Request) {
   const auth = await getAuthenticatedClient();
   if ("error" in auth) return auth.error;
@@ -30,4 +33,3 @@ export async function POST(request: Request) {
   const itinerary = await saveCloudItinerary(auth.supabase, auth.user.id, parsed.data);
   return NextResponse.json({ itinerary });
 }
-

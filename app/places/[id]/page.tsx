@@ -1,18 +1,22 @@
+// Place detail page: shows one catalog place with planning details and warnings.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPlaces, loadPlace } from "@/lib/catalog/repository";
 import { formatDuration } from "@/lib/format-duration";
 
+// Prebuilds static place-detail routes for the local catalog IDs.
 export function generateStaticParams() {
   return getPlaces().map((place) => ({ id: place.id }));
 }
 
+// Sets the browser title/description from the requested place.
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const place = await loadPlace((await params).id);
   return { title: place?.name ?? "Place not found", description: place?.description };
 }
 
+// Displays one place with practical planning details and warnings.
 export default async function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const place = await loadPlace((await params).id);
   if (!place) notFound();

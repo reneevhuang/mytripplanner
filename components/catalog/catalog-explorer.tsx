@@ -20,6 +20,7 @@ const INITIAL_FILTERS: CatalogFilterState = {
   sort: "rating",
 };
 
+// Filters, sorts, pages, and optionally maps the Italy place catalog.
 export function CatalogExplorer({ places, facets }: { places: Place[]; facets: CatalogFacets }) {
   const [filters, setFilters] = useState<CatalogFilterState>(INITIAL_FILTERS);
   const [showMap, setShowMap] = useState(false);

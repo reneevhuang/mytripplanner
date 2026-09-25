@@ -1,6 +1,7 @@
 import { format, parseISO } from "date-fns";
 import type { CityAllocation } from "@/lib/planner/types";
 
+// Lets the user assign one city to one or more dates in the trip.
 export function CityAllocationRow({
   allocation,
   cities,

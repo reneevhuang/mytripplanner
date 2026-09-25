@@ -1,3 +1,4 @@
+// Groups editor actions for saving, sharing, exporting, and printing an itinerary.
 export function EditorActionBar({
   readOnly,
   onSaveCopy,

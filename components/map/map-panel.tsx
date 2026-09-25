@@ -13,6 +13,7 @@ interface MapPanelProps {
 const CATALOG_MARKER_LIMIT = 30;
 const ORDERED_MARKER_LIMIT = 80;
 
+// Displays place markers using MapLibre when available and an SVG fallback otherwise.
 export function MapPanel({
   places,
   title = "Location overview",
@@ -27,8 +28,10 @@ export function MapPanel({
   );
   const lats = visible.map((place) => place.latitude);
   const lngs = visible.map((place) => place.longitude);
-  const minLat = lats.length ? Math.min(...lats) : 0; const maxLat = lats.length ? Math.max(...lats) : 0;
-  const minLng = lngs.length ? Math.min(...lngs) : 0; const maxLng = lngs.length ? Math.max(...lngs) : 0;
+  const minLat = lats.length ? Math.min(...lats) : 0;
+  const maxLat = lats.length ? Math.max(...lats) : 0;
+  const minLng = lngs.length ? Math.min(...lngs) : 0;
+  const maxLng = lngs.length ? Math.max(...lngs) : 0;
   const project = (place: Place) => {
     const x = ((place.longitude - minLng) / Math.max(maxLng - minLng, 0.01)) * 88 + 6;
     const y = (1 - (place.latitude - minLat) / Math.max(maxLat - minLat, 0.01)) * 78 + 11;
@@ -64,6 +67,9 @@ export function MapPanel({
           setMapFailed(true);
           return;
         }
+        map.on("error", () => {
+          if (!cancelled) setMapFailed(true);
+        });
         map.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
 
         const markers = visible.map((place, index) => {

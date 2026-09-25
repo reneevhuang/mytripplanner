@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description: "Browse a curated Italy catalog and build a practical, editable day-by-day itinerary.",
 };
 
+// Wraps every route with shared metadata, navigation, account state, and global styles.
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>

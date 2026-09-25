@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+// Ends the current Supabase session when a signed-in user clicks Sign out.
 async function signOut() {
   "use server";
   const supabase = await createSupabaseServerClient();
   if (supabase) await supabase.auth.signOut();
 }
 
+// Shows guest, sign-in, or signed-in account controls in the site header.
 export async function AccountMenu() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = supabase
@@ -28,4 +30,3 @@ export async function AccountMenu() {
     </form>
   );
 }
-

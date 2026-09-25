@@ -38,19 +38,23 @@ interface SupabasePlaceRow {
 let cachedCatalog: Place[] | null = null;
 let cachedSupabaseCatalog: Place[] | null = null;
 
+// Loads and caches the bundled JSON catalog.
 export function getPlaces(): Place[] {
   cachedCatalog ??= normalizeCatalog(catalogSource);
   return cachedCatalog;
 }
 
+// Finds one bundled catalog place by source ID.
 export function getPlace(id: string): Place | undefined {
   return getPlaces().find((place) => place.id === id);
 }
 
+// Builds filter facet lists from the bundled catalog.
 export function getCatalogFacets() {
   return getCatalogFacetsForPlaces(getPlaces());
 }
 
+// Builds sorted city, region, type, and tag facets for any place list.
 export function getCatalogFacetsForPlaces(places: Place[]) {
   return {
     cities: [...new Set(places.map((place) => place.city))].sort(),
@@ -60,6 +64,7 @@ export function getCatalogFacetsForPlaces(places: Place[]) {
   };
 }
 
+// Converts a Supabase place row into the same normalized Place shape as italy.json.
 function mapSupabasePlace(row: SupabasePlaceRow): Place {
   const tags = row.place_tags
     ?.map((link) => link.tags?.slug)
@@ -90,6 +95,7 @@ function mapSupabasePlace(row: SupabasePlaceRow): Place {
   return { ...normalized, importWarnings: [...new Set(importWarnings)] };
 }
 
+// Fetches the catalog from Supabase when public credentials are configured.
 async function fetchSupabaseCatalog(): Promise<Place[] | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -128,6 +134,7 @@ async function fetchSupabaseCatalog(): Promise<Place[] | null> {
   return rows.map(mapSupabasePlace);
 }
 
+// Loads places from Supabase when available, otherwise falls back to italy.json.
 export async function loadPlaces(): Promise<Place[]> {
   if (cachedSupabaseCatalog) return cachedSupabaseCatalog;
   try {
@@ -142,6 +149,7 @@ export async function loadPlaces(): Promise<Place[]> {
   return getPlaces();
 }
 
+// Loads one place from the active catalog source.
 export async function loadPlace(id: string): Promise<Place | undefined> {
   return (await loadPlaces()).find((place) => place.id === id);
 }

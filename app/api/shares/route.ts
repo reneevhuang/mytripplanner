@@ -4,10 +4,12 @@ import { itinerarySchema } from "@/lib/planner/itinerary-schema";
 import { saveCloudItinerary } from "@/lib/persistence/cloud-itineraries";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+// Stores only a hash of the share token so raw tokens are never persisted.
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+// Saves an itinerary and creates a server-backed read-only share link for it.
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Supabase is not configured." }, { status: 503 });
@@ -32,4 +34,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ url: `/share/${token}`, token, itinerary });
 }
-

@@ -13,11 +13,13 @@ const headers = {
   Prefer: "resolution=merge-duplicates",
 };
 
+// Sends an authenticated Supabase REST write request.
 async function request(path: string, body: unknown) {
   const response = await fetch(`${url}/rest/v1/${path}`, { method: "POST", headers, body: JSON.stringify(body) });
   if (!response.ok) throw new Error(`${path} import failed: ${response.status} ${await response.text()}`);
 }
 
+// Sends an authenticated Supabase REST read request.
 async function query<T>(path: string): Promise<T> {
   const response = await fetch(`${url}/rest/v1/${path}`, { headers });
   if (!response.ok) throw new Error(`${path} query failed: ${response.status} ${await response.text()}`);

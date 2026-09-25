@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Place } from "@/lib/catalog/schema";
 import { formatDuration } from "@/lib/format-duration";
 
+// Displays filtered catalog places in a responsive table with pagination controls.
 export function CatalogResults({
   places,
   hasMore,
@@ -47,6 +48,7 @@ export function CatalogResults({
   );
 }
 
+// Renders a single place row plus its optional quick-details expansion.
 function FragmentRow({ place, expanded, onToggle }: { place: Place; expanded: boolean; onToggle: () => void }) {
   return (
     <>

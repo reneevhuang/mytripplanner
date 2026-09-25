@@ -1,3 +1,4 @@
+// Shows which step of the trip-planning wizard is active.
 export function PlannerProgress({ currentStep }: { currentStep: number }) {
   const steps = ["Trip basics", "Cities & dates", "Preferences"];
   return (

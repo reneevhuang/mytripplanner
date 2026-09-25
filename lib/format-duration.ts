@@ -1,3 +1,4 @@
+// Formats a minute count as readable text for durations shown in the UI.
 export function formatDuration(minutes: number | null): string {
   if (minutes === null) return "Unknown";
 

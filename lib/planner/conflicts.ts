@@ -1,6 +1,7 @@
 import { minutesFromTime } from "@/lib/catalog/hours";
 import type { ItineraryDay } from "./types";
 
+// Finds overlaps and day-end violations within one itinerary day.
 export function findDayConflicts(day: ItineraryDay, dayEnd: string): string[] {
   const conflicts: string[] = [];
   let previousEnd = -1;

@@ -9,10 +9,12 @@ interface ItineraryRow {
   itinerary_payload: unknown;
 }
 
+// Updates the itinerary's server-side timestamp before saving.
 function withServerTimestamps(itinerary: Itinerary): Itinerary {
   return { ...itinerary, updatedAt: new Date().toISOString() };
 }
 
+// Loads all itineraries owned by the current Supabase user.
 export async function listCloudItineraries(supabase: SupabaseClient): Promise<Itinerary[]> {
   const { data, error } = await supabase
     .from("itineraries")
@@ -24,6 +26,7 @@ export async function listCloudItineraries(supabase: SupabaseClient): Promise<It
   );
 }
 
+// Saves a new or existing itinerary while preserving local-to-cloud import identity.
 export async function saveCloudItinerary(
   supabase: SupabaseClient,
   ownerId: string,
@@ -79,4 +82,3 @@ export async function saveCloudItinerary(
   if (error) throw error;
   return saved;
 }
-

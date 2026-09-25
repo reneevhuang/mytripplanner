@@ -1,7 +1,9 @@
+// Home page: introduces the planner and shows the searchable Italy place catalog.
 import Link from "next/link";
 import { CatalogExplorer } from "@/components/catalog/catalog-explorer";
 import { getCatalogFacetsForPlaces, loadPlaces } from "@/lib/catalog/repository";
 
+// Loads the catalog and renders the landing page plus searchable place explorer.
 export default async function HomePage() {
   const places = await loadPlaces();
   const facets = getCatalogFacetsForPlaces(places);

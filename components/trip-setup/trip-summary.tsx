@@ -1,5 +1,6 @@
 import type { CityAllocation, Pace } from "@/lib/planner/types";
 
+// Summarizes the current trip setup beside the wizard.
 export function TripSummary({
   name,
   startDate,

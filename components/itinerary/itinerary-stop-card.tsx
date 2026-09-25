@@ -1,6 +1,7 @@
 import type { ItineraryStop } from "@/lib/planner/types";
 import { formatDuration } from "@/lib/format-duration";
 
+// Renders one itinerary stop with timing, travel, notes, warnings, and edit controls.
 export function ItineraryStopCard({
   stop,
   stopIndex,

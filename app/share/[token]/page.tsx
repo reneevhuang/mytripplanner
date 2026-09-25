@@ -1,3 +1,4 @@
+// Shared itinerary page: opens local or server-backed read-only itinerary links.
 import type { Metadata } from "next";
 import { ItineraryEditor } from "@/components/itinerary/itinerary-editor";
 import { SharedItinerary } from "@/components/itinerary/shared-itinerary";
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Resolves a local or server-backed share token and displays it read-only.
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
   const token = (await params).token;
   if (token === "local") return <SharedItinerary token={token} />;

@@ -7,6 +7,7 @@ export interface MapProvider {
   route(from: RouteLocation, to: RouteLocation, mode: TravelMode): Promise<TravelGap>;
 }
 
+// Carries map-provider failure categories back to API callers.
 export class MapProviderError extends Error {
   constructor(
     message: string,

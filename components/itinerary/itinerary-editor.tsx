@@ -11,6 +11,7 @@ import { MapPanel } from "@/components/map/map-panel";
 import { EditorActionBar } from "./editor-action-bar";
 import { ItineraryDayCard } from "./itinerary-day-card";
 
+// Recomputes start times and warnings after stops are reordered or removed.
 function rescheduleDay(day: ItineraryDay, dayStart: string, dayEnd: string): ItineraryDay {
   let cursor = minutesFromTime(dayStart);
   const stops = day.stops.map((stop, index, all) => {
@@ -24,13 +25,17 @@ function rescheduleDay(day: ItineraryDay, dayStart: string, dayEnd: string): Iti
   return { ...updated, warnings: findDayConflicts(updated, dayEnd) };
 }
 
+// Downloads generated text content, such as an ICS calendar, from the browser.
 function download(filename: string, content: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }));
   const anchor = document.createElement("a");
-  anchor.href = url; anchor.download = filename; anchor.click();
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
   URL.revokeObjectURL(url);
 }
 
+// Lets users review, edit, save, share, print, and export an itinerary.
 export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false }: { itinerary: Itinerary; onChange?: (value: Itinerary) => void; onClose?: () => void; readOnly?: boolean }) {
   const [status, setStatus] = useState("");
   const [dragged, setDragged] = useState<{ dayIndex: number; stopIndex: number } | null>(null);
@@ -107,7 +112,12 @@ export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false
       createdAt: timestamp,
       updatedAt: timestamp,
     };
-    try { saveGuestItinerary(copy); setStatus(`Saved “${copy.input.name}” as a separate trip.`); } catch { setStatus("Saving the copy failed. Check browser storage permissions."); }
+    try {
+      saveGuestItinerary(copy);
+      setStatus(`Saved “${copy.input.name}” as a separate trip.`);
+    } catch {
+      setStatus("Saving the copy failed. Check browser storage permissions.");
+    }
   };
   const share = async () => {
     try {
@@ -130,7 +140,12 @@ export function ItineraryEditor({ itinerary, onChange, onClose, readOnly = false
     }
     const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(itinerary))));
     const url = `${window.location.origin}/share/local#${encoded}`;
-    try { await navigator.clipboard.writeText(url); setStatus("Read-only link copied."); } catch { setStatus(`Copy this link: ${url}`); }
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus("Read-only link copied.");
+    } catch {
+      setStatus(`Copy this link: ${url}`);
+    }
   };
 
   return (

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+// Completes the Supabase magic-link flow and redirects back into the planner.
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
@@ -14,4 +15,3 @@ export async function GET(request: Request) {
   if (error) return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`);
   return NextResponse.redirect(`${origin}/plan`);
 }
-

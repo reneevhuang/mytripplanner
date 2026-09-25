@@ -1,5 +1,8 @@
 "use client";
 
+// This is the main feature controller. It collects trip inputs, calls the pure
+// planner in lib/planner/generate.ts, optionally upgrades travel gaps through
+// /api/routes, and hands the result to ItineraryEditor for editing and saving.
 import { useEffect, useMemo, useState } from "react";
 import type { Place, PriceRange } from "@/lib/catalog/schema";
 import { generateItinerary } from "@/lib/planner/generate";
@@ -15,6 +18,7 @@ import { CityAllocationRow } from "./city-allocation-row";
 import { InterestSelector } from "./interest-selector";
 import { TripSummary } from "./trip-summary";
 
+// Replaces heuristic gaps with provider route estimates when the server can calculate them.
 async function addProviderRoutes(itinerary: Itinerary): Promise<Itinerary> {
   const legs = itinerary.days.flatMap((day) =>
     day.stops.slice(1).map((stop, index) => ({
@@ -48,6 +52,7 @@ async function addProviderRoutes(itinerary: Itinerary): Promise<Itinerary> {
   return { ...itinerary, days, warnings: [], updatedAt: new Date().toISOString() };
 }
 
+// Collects trip inputs, generates itineraries, and opens saved trips for editing.
 export function TripPlanner({ places, cities, initialDate }: { places: Place[]; cities: string[]; initialDate: string }) {
   const [name, setName] = useState("My Italian journey");
   const [startDate, setStartDate] = useState(initialDate);
@@ -74,7 +79,15 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
   const visibleSaved = showAllSaved ? saved : saved.slice(0, 3);
 
   useEffect(() => {
-    try { setSaved(listGuestItineraries()); } catch (cause) { setError(cause instanceof Error ? cause.message : "Saved trips could not be read."); }
+    try {
+      const guestTrips = listGuestItineraries();
+      setSaved(guestTrips);
+    } catch (cause) {
+      const message = cause instanceof Error
+        ? cause.message
+        : "Saved trips could not be read.";
+      setError(message);
+    }
     fetch("/api/itineraries")
       .then(async (response) => {
         if (response.status === 401 || response.status === 503) return null;
@@ -128,7 +141,11 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
   const syncDates = (field: "start" | "end", value: string) => {
     const nextStart = field === "start" ? value : startDate;
     const nextEnd = field === "end" ? value : endDate;
-    if (field === "start") setStartDate(value); else setEndDate(value);
+    if (field === "start") {
+      setStartDate(value);
+    } else {
+      setEndDate(value);
+    }
     const allowedDates = datesInRange(nextStart, nextEnd);
     setAllocations((current) => {
       const filtered = current.map((allocation) => ({
@@ -212,7 +229,16 @@ export function TripPlanner({ places, cities, initialDate }: { places: Place[]; 
   };
 
   if (itinerary) {
-    return <ItineraryEditor itinerary={itinerary} onChange={setItinerary} onClose={() => { setItinerary(null); void refreshSavedTrips(); }} />;
+    return (
+      <ItineraryEditor
+        itinerary={itinerary}
+        onChange={setItinerary}
+        onClose={() => {
+          setItinerary(null);
+          void refreshSavedTrips();
+        }}
+      />
+    );
   }
 
   return (

@@ -27,6 +27,7 @@ interface FilterChip {
   onRemove: () => void;
 }
 
+// Renders all catalog filter controls and removable active-filter chips.
 export function CatalogFilters({
   facets,
   filters,

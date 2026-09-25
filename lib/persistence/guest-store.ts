@@ -8,6 +8,7 @@ interface GuestStore {
   itineraries: Itinerary[];
 }
 
+// Reads and validates the browser's local itinerary store.
 function readStore(): GuestStore {
   if (typeof window === "undefined") return { version: 1, itineraries: [] };
   const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -17,10 +18,12 @@ function readStore(): GuestStore {
   return { version: 1, itineraries: itinerarySchema.array().parse(parsed.itineraries) };
 }
 
+// Lists itineraries saved on this device.
 export function listGuestItineraries(): Itinerary[] {
   return readStore().itineraries;
 }
 
+// Inserts or updates one itinerary in browser localStorage.
 export function saveGuestItinerary(itinerary: Itinerary): void {
   const store = readStore();
   const updated = { ...itinerary, updatedAt: new Date().toISOString() };
@@ -30,6 +33,7 @@ export function saveGuestItinerary(itinerary: Itinerary): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
 
+// Removes one itinerary from browser localStorage.
 export function deleteGuestItinerary(id: string): void {
   const store = readStore();
   store.itineraries = store.itineraries.filter((item) => item.id !== id);

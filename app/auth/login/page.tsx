@@ -1,3 +1,4 @@
+// Login page: sends Supabase magic links so users can sync saved itineraries.
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
   description: "Sign in to save and sync your Italy itineraries.",
 };
 
+// Sends the user a Supabase magic link for passwordless sign-in.
 async function signIn(formData: FormData) {
   "use server";
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -25,6 +27,7 @@ async function signIn(formData: FormData) {
   redirect(`/auth/login?sent=1&email=${encodeURIComponent(email)}`);
 }
 
+// Renders the sign-in form and feedback after a link is requested.
 export default async function LoginPage({
   searchParams,
 }: {
@@ -50,4 +53,3 @@ export default async function LoginPage({
     </section>
   );
 }
-

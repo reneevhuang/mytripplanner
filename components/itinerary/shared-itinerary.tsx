@@ -5,6 +5,7 @@ import type { Itinerary } from "@/lib/planner/types";
 import { itinerarySchema } from "@/lib/planner/itinerary-schema";
 import { ItineraryEditor } from "./itinerary-editor";
 
+// Reads a local share snapshot from the URL hash and shows it read-only.
 export function SharedItinerary({ token }: { token: string }) {
   const [itinerary, setItinerary] = useState<Itinerary | null>(null);
   const [error, setError] = useState("");

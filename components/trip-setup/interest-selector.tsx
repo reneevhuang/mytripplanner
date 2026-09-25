@@ -1,3 +1,4 @@
+// Lets the user choose interest tags that influence planner scoring.
 export function InterestSelector({
   tags,
   selected,

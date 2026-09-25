@@ -3,6 +3,7 @@ import type { TravelGap, TravelMode } from "./types";
 
 const EARTH_RADIUS_KM = 6371;
 
+// Calculates straight-line distance between two coordinates.
 export function haversineKm(a: Pick<Place, "latitude" | "longitude">, b: Pick<Place, "latitude" | "longitude">): number {
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
   const deltaLat = toRadians(b.latitude - a.latitude);
@@ -15,6 +16,7 @@ export function haversineKm(a: Pick<Place, "latitude" | "longitude">, b: Pick<Pl
   return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 }
 
+// Estimates travel time from distance when no routing provider is available.
 export function estimateTravelGap(from: Place, to: Place, mode: TravelMode = "walking"): TravelGap {
   const distanceKm = haversineKm(from, to);
   const speeds: Record<TravelMode, number> = { walking: 4.5, transit: 18, driving: 28 };

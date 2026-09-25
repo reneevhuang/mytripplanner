@@ -11,6 +11,7 @@ const requestSchema = z.object({
   })).max(30),
 });
 
+// Converts planner route-leg requests into Amazon Location travel estimates.
 export async function POST(request: Request) {
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

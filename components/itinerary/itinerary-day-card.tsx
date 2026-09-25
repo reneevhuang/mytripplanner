@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import type { ItineraryDay } from "@/lib/planner/types";
 import { ItineraryStopCard } from "./itinerary-stop-card";
 
+// Renders one itinerary day, its warnings, and the editable stop list.
 export function ItineraryDayCard({
   day,
   readOnly,
